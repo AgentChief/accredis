@@ -591,6 +591,64 @@ async def upload_document(
     await db.documents.insert_one(doc)
     return {"message": "Document uploaded successfully", "document_id": doc_id}
 
+# ===========================
+# SETTINGS MANAGEMENT
+# ===========================
+
+@api_router.post("/settings")
+async def save_settings(settings: dict, current_user=Depends(get_current_user)):
+    """Save user/clinic settings - for MVP, we'll update the backend .env file with API key"""
+    try:
+        # For MVP: Update OpenAI API key in environment
+        if 'openai_api_key' in settings and settings['openai_api_key']:
+            # In production, this should be encrypted per-clinic in database
+            api_key = settings['openai_api_key']
+            
+            # Update .env file
+            env_path = ROOT_DIR / '.env'
+            with open(env_path, 'r') as f:
+                lines = f.readlines()
+            
+            # Update or add OPENAI_API_KEY
+            key_found = False
+            for i, line in enumerate(lines):
+                if line.startswith('OPENAI_API_KEY='):
+                    lines[i] = f'OPENAI_API_KEY="{api_key}"\n'
+                    key_found = True
+                    break
+            
+            if not key_found:
+                lines.append(f'OPENAI_API_KEY="{api_key}"\n')
+            
+            with open(env_path, 'w') as f:
+                f.writelines(lines)
+            
+            # Update environment variable for current session
+            os.environ['OPENAI_API_KEY'] = api_key
+            
+            logger.info(f"Updated OpenAI API key for user {current_user['id']}")
+        
+        return {"message": "Settings saved successfully"}
+        
+    except Exception as e:
+        logger.error(f"Failed to save settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save settings")
+
+@api_router.get("/settings")
+async def get_settings(current_user=Depends(get_current_user)):
+    """Get current settings"""
+    try:
+        # For MVP, return basic settings structure
+        return {
+            "openai_api_key": "***" if os.environ.get('OPENAI_API_KEY') else "",
+            "notification_email": True,
+            "auto_backup": True,
+            "audit_frequency": "monthly"
+        }
+    except Exception as e:
+        logger.error(f"Failed to get settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get settings")
+
 # Include router
 app.include_router(api_router)
 
