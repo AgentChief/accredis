@@ -1097,7 +1097,7 @@ const Team = () => (
   </div>
 );
 
-const Settings = () => (
+const SettingsPage = () => (
   <div className="text-center py-12">
     <Settings className="mx-auto h-12 w-12 text-gray-400" />
     <h3 className="mt-2 text-lg font-medium text-gray-900">Settings</h3>
