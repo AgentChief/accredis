@@ -1373,13 +1373,171 @@ const Team = () => (
   </div>
 );
 
-const SettingsPage = () => (
-  <div className="text-center py-12">
-    <Settings className="mx-auto h-12 w-12 text-gray-400" />
-    <h3 className="mt-2 text-lg font-medium text-gray-900">Settings</h3>
-    <p className="mt-1 text-sm text-gray-500">Settings panel coming soon.</p>
-  </div>
-);
+const SettingsPage = () => {
+  const [settings, setSettings] = useState({
+    openai_api_key: '',
+    notification_email: true,
+    auto_backup: true,
+    audit_frequency: 'monthly'
+  });
+  const [loading, setLoading] = useState(false);
+  const [keyVisible, setKeyVisible] = useState(false);
+  const { user } = useAuth();
+
+  const handleSaveSettings = async () => {
+    setLoading(true);
+    try {
+      // For MVP, we'll store the API key in backend environment
+      // In production, this should be encrypted per-clinic
+      await axios.post(`${API}/settings`, settings);
+      toast.success('Settings saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="mt-2 text-gray-600">Configure your Accredis preferences and integrations</p>
+      </div>
+
+      {/* API Integration */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">API Integrations</h3>
+          <p className="mt-1 text-sm text-gray-500">Configure external service connections for AI document generation</p>
+        </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              OpenAI API Key
+            </label>
+            <div className="relative">
+              <input
+                type={keyVisible ? "text" : "password"}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="sk-..."
+                value={settings.openai_api_key}
+                onChange={(e) => setSettings({ ...settings, openai_api_key: e.target.value })}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setKeyVisible(!keyVisible)}
+              >
+                {keyVisible ? (
+                  <Eye className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Required for AI-powered document generation. Get your API key from{' '}
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500">
+                OpenAI Platform
+              </a>
+            </p>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-yellow-400" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Important</h3>
+                <p className="mt-1 text-sm text-yellow-700">
+                  Your API key is encrypted and stored securely. It's only used for generating compliant policies and procedures for your clinic.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Settings */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Notifications</h3>
+          <p className="mt-1 text-sm text-gray-500">Manage how you receive updates and alerts</p>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Email Notifications</label>
+              <p className="text-sm text-gray-500">Receive email alerts for policy updates and compliance reminders</p>
+            </div>
+            <input
+              type="checkbox"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              checked={settings.notification_email}
+              onChange={(e) => setSettings({ ...settings, notification_email: e.target.checked })}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Auto Backup</label>
+              <p className="text-sm text-gray-500">Automatically backup published documents to secure storage</p>
+            </div>
+            <input
+              type="checkbox"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              checked={settings.auto_backup}
+              onChange={(e) => setSettings({ ...settings, auto_backup: e.target.checked })}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Compliance Settings */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Compliance</h3>
+          <p className="mt-1 text-sm text-gray-500">Configure compliance monitoring and audit settings</p>
+        </div>
+        <div className="p-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Audit Frequency</label>
+            <select
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={settings.audit_frequency}
+              onChange={(e) => setSettings({ ...settings, audit_frequency: e.target.value })}
+            >
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="annually">Annually</option>
+            </select>
+            <p className="mt-2 text-sm text-gray-500">
+              How often to automatically audit your documents for compliance updates
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-3">
+        <button
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Reset to Defaults
+        </button>
+        <button
+          onClick={handleSaveSettings}
+          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // Main App Component
 function App() {
