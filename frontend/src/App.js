@@ -1170,7 +1170,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <Settings />
+                    <SettingsPage />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
