@@ -1081,13 +1081,133 @@ const CreateRiskModal = ({ onClose, onSuccess }) => {
 };
 
 // Simple placeholder components
-const ClinicSetup = () => (
-  <div className="text-center py-12">
-    <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-    <h3 className="mt-2 text-lg font-medium text-gray-900">Clinic Setup</h3>
-    <p className="mt-1 text-sm text-gray-500">Clinic management features coming soon.</p>
-  </div>
-);
+// Clinic Setup Component
+const ClinicSetup = () => {
+  const [clinics, setClinics] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchClinics();
+  }, []);
+
+  const fetchClinics = async () => {
+    try {
+      const response = await axios.get(`${API}/clinics`);
+      setClinics(response.data);
+    } catch (error) {
+      toast.error('Failed to load clinics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Clinic Setup</h1>
+          <p className="mt-2 text-gray-600">Configure your clinic information and settings</p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Clinic
+        </button>
+      </div>
+
+      {/* Clinics Grid */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          {clinics.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {clinics.map((clinic) => (
+                <div key={clinic.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                  <div className="flex items-center">
+                    <Building2 className="h-8 w-8 text-blue-600" />
+                    <div className="ml-4 flex-1">
+                      <h3 className="text-lg font-medium text-gray-900">{clinic.name}</h3>
+                      <p className="text-sm text-gray-500">{clinic.state}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex text-sm text-gray-600">
+                      <span className="font-medium w-16">ABN:</span>
+                      <span>{clinic.abn || 'Not provided'}</span>
+                    </div>
+                    <div className="flex text-sm text-gray-600">
+                      <span className="font-medium w-16">Address:</span>
+                      <span className="truncate">{clinic.address}</span>
+                    </div>
+                    {clinic.phone && (
+                      <div className="flex text-sm text-gray-600">
+                        <span className="font-medium w-16">Phone:</span>
+                        <span>{clinic.phone}</span>
+                      </div>
+                    )}
+                    {clinic.email && (
+                      <div className="flex text-sm text-gray-600">
+                        <span className="font-medium w-16">Email:</span>
+                        <span className="truncate">{clinic.email}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">
+                        Created {format(new Date(clinic.created_at), 'MMM d, yyyy')}
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Building2 className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No clinics yet</h3>
+              <p className="mt-1 text-sm text-gray-500">Get started by adding your first clinic.</p>
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Clinic
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create Clinic Modal */}
+      {showCreateModal && (
+        <CreateClinicModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchClinics();
+          }}
+        />
+      )}
+    </div>
+  );
+};
 
 const Team = () => (
   <div className="text-center py-12">
