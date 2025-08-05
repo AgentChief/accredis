@@ -590,7 +590,30 @@ const CreateDocumentModal = ({ onClose, onSuccess }) => {
     clinic_id: ''
   });
   const [loading, setLoading] = useState(false);
+  const [clinics, setClinics] = useState([]);
+  const [loadingClinics, setLoadingClinics] = useState(true);
   const { user } = useAuth();
+
+  // Fetch user's clinics when modal opens
+  useEffect(() => {
+    fetchClinics();
+  }, []);
+
+  const fetchClinics = async () => {
+    try {
+      const response = await axios.get(`${API}/clinics`);
+      setClinics(response.data);
+      
+      // Auto-select first clinic if only one exists
+      if (response.data.length === 1) {
+        setFormData(prev => ({ ...prev, clinic_id: response.data[0].id }));
+      }
+    } catch (error) {
+      toast.error('Failed to load clinics');
+    } finally {
+      setLoadingClinics(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -624,81 +647,124 @@ const CreateDocumentModal = ({ onClose, onSuccess }) => {
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                What kind of document do you need?
+                Select Clinic *
               </label>
-              <textarea
-                required
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., Create a cold-chain breach policy for NSW that covers vaccine storage requirements..."
-                value={formData.prompt}
-                onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              {loadingClinics ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-gray-500">Loading clinics...</span>
+                </div>
+              ) : clinics.length > 0 ? (
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={formData.clinic_id}
+                  onChange={(e) => setFormData({ ...formData, clinic_id: e.target.value })}
                 >
-                  <option value="policy">Policy</option>
-                  <option value="procedure">Procedure</option>
-                  <option value="checklist">Checklist</option>
-                  <option value="risk_assessment">Risk Assessment</option>
+                  <option value="">Choose a clinic...</option>
+                  {clinics.map((clinic) => (
+                    <option key={clinic.id} value={clinic.id}>
+                      {clinic.name} ({clinic.state})
+                    </option>
+                  ))}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Jurisdiction</label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.jurisdiction}
-                  onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
-                >
-                  <option value="national">National</option>
-                  <option value="NSW">New South Wales</option>
-                  <option value="VIC">Victoria</option>
-                  <option value="QLD">Queensland</option>
-                  <option value="SA">South Australia</option>
-                  <option value="WA">Western Australia</option>
-                  <option value="TAS">Tasmania</option>
-                  <option value="NT">Northern Territory</option>
-                  <option value="ACT">ACT</option>
-                </select>
-              </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Building2 className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500 mb-3">No clinics found. Please create a clinic first.</p>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100"
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Go to Clinic Setup
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Clinic ID</label>
-              <input
-                type="text"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter your clinic ID"
-                value={formData.clinic_id}
-                onChange={(e) => setFormData({ ...formData, clinic_id: e.target.value })}
-              />
-            </div>
+            {clinics.length > 0 && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What kind of document do you need? *
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Create a cold-chain breach policy for NSW that covers vaccine storage requirements..."
+                    value={formData.prompt}
+                    onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                  />
+                </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? 'Generating...' : 'Generate Document'}
-              </button>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    >
+                      <option value="policy">Policy</option>
+                      <option value="procedure">Procedure</option>
+                      <option value="checklist">Checklist</option>
+                      <option value="risk_assessment">Risk Assessment</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Jurisdiction</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={formData.jurisdiction}
+                      onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
+                    >
+                      <option value="national">National</option>
+                      <option value="NSW">New South Wales</option>
+                      <option value="VIC">Victoria</option>
+                      <option value="QLD">Queensland</option>
+                      <option value="SA">South Australia</option>
+                      <option value="WA">Western Australia</option>
+                      <option value="TAS">Tasmania</option>
+                      <option value="NT">Northern Territory</option>
+                      <option value="ACT">ACT</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex">
+                    <Shield className="h-5 w-5 text-blue-400" />
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">AI Document Generation</h3>
+                      <p className="mt-1 text-sm text-blue-700">
+                        Our AI will create a jurisdiction-specific policy that complies with RACGP standards and your state regulations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !formData.clinic_id}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Generating...' : 'Generate Document'}
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         </div>
       </div>
