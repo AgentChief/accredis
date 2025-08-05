@@ -1163,11 +1163,34 @@ const CreateRiskModal = ({ onClose, onSuccess }) => {
     clinic_id: ''
   });
   const [loading, setLoading] = useState(false);
+  const [clinics, setClinics] = useState([]);
+  const [loadingClinics, setLoadingClinics] = useState(true);
+
+  // Fetch user's clinics when modal opens
+  useEffect(() => {
+    fetchClinics();
+  }, []);
+
+  const fetchClinics = async () => {
+    try {
+      const response = await axios.get(`${API}/clinics`);
+      setClinics(response.data);
+      
+      // Auto-select first clinic if only one exists
+      if (response.data.length === 1) {
+        setFormData(prev => ({ ...prev, clinic_id: response.data[0].id }));
+      }
+    } catch (error) {
+      toast.error('Failed to load clinics');
+    } finally {
+      setLoadingClinics(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.clinic_id) {
-      toast.error('Please enter clinic ID');
+      toast.error('Please select a clinic first');
       return;
     }
 
@@ -1195,106 +1218,153 @@ const CreateRiskModal = ({ onClose, onSuccess }) => {
           
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-              <input
-                type="text"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-              <textarea
-                required
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                <option value="clinical">Clinical</option>
-                <option value="WHS">Work Health & Safety</option>
-                <option value="privacy">Privacy</option>
-                <option value="business">Business</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Severity (1-5)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Clinic *</label>
+              {loadingClinics ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                  <span className="ml-2 text-sm text-gray-500">Loading clinics...</span>
+                </div>
+              ) : clinics.length > 0 ? (
                 <select
+                  required
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.severity}
-                  onChange={(e) => setFormData({ ...formData, severity: parseInt(e.target.value) })}
+                  value={formData.clinic_id}
+                  onChange={(e) => setFormData({ ...formData, clinic_id: e.target.value })}
                 >
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <option key={n} value={n}>{n}</option>
+                  <option value="">Choose a clinic...</option>
+                  {clinics.map((clinic) => (
+                    <option key={clinic.id} value={clinic.id}>
+                      {clinic.name} ({clinic.state})
+                    </option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Likelihood (1-5)</label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.likelihood}
-                  onChange={(e) => setFormData({ ...formData, likelihood: parseInt(e.target.value) })}
-                >
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
-                </select>
-              </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Building2 className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500 mb-3">No clinics found. Please create a clinic first.</p>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100"
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Go to Clinic Setup
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Clinic ID</label>
-              <input
-                type="text"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.clinic_id}
-                onChange={(e) => setFormData({ ...formData, clinic_id: e.target.value })}
-              />
-            </div>
+            {clinics.length > 0 && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Risk Title *</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Vaccine cold-chain breach"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mitigation Plan (Optional)</label>
-              <textarea
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.mitigation_plan}
-                onChange={(e) => setFormData({ ...formData, mitigation_plan: e.target.value })}
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                  <textarea
+                    required
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Describe the risk and its potential impact..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {loading ? 'Logging...' : 'Log Risk'}
-              </button>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="clinical">Clinical</option>
+                    <option value="WHS">Work Health & Safety</option>
+                    <option value="privacy">Privacy</option>
+                    <option value="business">Business</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Severity (1-5)</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={formData.severity}
+                      onChange={(e) => setFormData({ ...formData, severity: parseInt(e.target.value) })}
+                    >
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <option key={n} value={n}>{n} - {n === 1 ? 'Very Low' : n === 2 ? 'Low' : n === 3 ? 'Medium' : n === 4 ? 'High' : 'Critical'}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Likelihood (1-5)</label>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={formData.likelihood}
+                      onChange={(e) => setFormData({ ...formData, likelihood: parseInt(e.target.value) })}
+                    >
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <option key={n} value={n}>{n} - {n === 1 ? 'Very Unlikely' : n === 2 ? 'Unlikely' : n === 3 ? 'Possible' : n === 4 ? 'Likely' : 'Almost Certain'}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mitigation Plan (Optional)</label>
+                  <textarea
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Describe how this risk will be managed or mitigated..."
+                    value={formData.mitigation_plan}
+                    onChange={(e) => setFormData({ ...formData, mitigation_plan: e.target.value })}
+                  />
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex">
+                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Risk Score: {formData.severity * formData.likelihood}</h3>
+                      <p className="mt-1 text-sm text-red-700">
+                        {formData.severity * formData.likelihood >= 15 ? 'High Risk - Immediate action required' :
+                         formData.severity * formData.likelihood >= 10 ? 'Medium Risk - Action plan needed' :
+                         'Low Risk - Monitor and review'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !formData.clinic_id}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Logging...' : 'Log Risk'}
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         </div>
       </div>
