@@ -929,7 +929,163 @@ const RiskRegister = () => {
   );
 };
 
-// Create Risk Modal
+// Create Clinic Modal
+const CreateClinicModal = ({ onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    abn: '',
+    address: '',
+    state: 'NSW',
+    phone: '',
+    email: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await axios.post(`${API}/clinics`, formData);
+      toast.success('Clinic created successfully!');
+      onSuccess();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create clinic');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const australianStates = [
+    { value: 'NSW', label: 'New South Wales' },
+    { value: 'VIC', label: 'Victoria' },
+    { value: 'QLD', label: 'Queensland' },
+    { value: 'SA', label: 'South Australia' },
+    { value: 'WA', label: 'Western Australia' },
+    { value: 'TAS', label: 'Tasmania' },
+    { value: 'NT', label: 'Northern Territory' },
+    { value: 'ACT', label: 'Australian Capital Territory' }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        
+        <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">Add New Clinic</h3>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Clinic Name *</label>
+              <input
+                type="text"
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Sydney Family Practice"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ABN</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="12 345 678 901"
+                  value={formData.abn}
+                  onChange={(e) => setFormData({ ...formData, abn: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">State/Territory *</label>
+                <select
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                >
+                  {australianStates.map(state => (
+                    <option key={state.value} value={state.value}>{state.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
+              <textarea
+                required
+                rows={2}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="123 Main Street, Sydney NSW 2000"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="(02) 1234 5678"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="info@clinic.com.au"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex">
+                <Building2 className="h-5 w-5 text-blue-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">Clinic Setup</h3>
+                  <p className="mt-1 text-sm text-blue-700">
+                    This information will be used for generating jurisdiction-specific policies and compliance documents.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create Clinic'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
 const CreateRiskModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: '',
