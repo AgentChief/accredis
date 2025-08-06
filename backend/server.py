@@ -398,9 +398,23 @@ async def generate_document(request: DocumentGenerationRequest, current_user=Dep
     
     # Create document
     doc_id = str(uuid.uuid4())
+    
+    # Extract title from AI content - look for the first heading
+    import re
+    title_match = re.search(r'^#+\s*(.+)$', ai_content, re.MULTILINE)
+    if title_match:
+        extracted_title = title_match.group(1).strip()
+    else:
+        # Fallback to first sentence if no heading found
+        sentences = ai_content.split('.')
+        extracted_title = sentences[0][:100] + "..." if len(sentences[0]) > 100 else sentences[0]
+        
+    # Clean up any markdown formatting from title
+    extracted_title = re.sub(r'[#*_`]', '', extracted_title).strip()
+    
     doc = {
         "id": doc_id,
-        "title": f"Generated {request.category.title()}: {request.prompt[:50]}...",
+        "title": extracted_title,
         "content": ai_content,
         "category": request.category,
         "jurisdiction": request.jurisdiction,
